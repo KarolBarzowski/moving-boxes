@@ -27,7 +27,7 @@
         background-color: white;
       }
 
-      .box:nth-of-type(even) {
+      .gray {
         background-color: gray;
       }
 
@@ -145,6 +145,22 @@
             const y = rowIndex * (boxWidth + gap) + (innerHeight - rows * (boxWidth + gap)) / 2;
             box.style.left = `${x}px`;
             box.style.top = `${y}px`;
+
+            if (columns % 2 === 0) {
+              if (rowIndex % 2 === 0) {
+                if ((columnIndex + rowIndex * columns) % 2 === 0) {
+                  box.classList.add("gray");
+                }
+              } else {
+                if ((columnIndex + rowIndex * columns) % 2 !== 0) {
+                  box.classList.add("gray");
+                }
+              }
+            } else {
+              if ((columnIndex + rowIndex * columns) % 2 === 0) {
+                box.classList.add("gray");
+              }
+            }
 
             if (!rowIndex) bordersX.push(x);
             if (!columnIndex) bordersY.push(y);
