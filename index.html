@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Moving boxes</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      #app {
+        position: relative;
+        height: 100vh;
+        width: 100%;
+      }
+
+      .box {
+        position: absolute;
+        height: 64px;
+        width: 64px;
+        border: 1px solid black;
+        border-radius: 5px;
+        background-color: white;
+      }
+
+      .box:nth-of-type(even) {
+        background-color: gray;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: rotate(6deg);
+        }
+
+        50% {
+          transform: rotate(-6deg);
+        }
+      }
+
+      .shake {
+        animation: shake 0.3s ease-in-out infinite;
+        box-shadow: 0 0 6px -2px rgba(0, 0, 0, 0.6);
+      }
+
+      .transition {
+        transition: all 0.3s ease-in-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      const app = document.querySelector("#app");
+      const boxWidth = 64;
+      const gap = 10;
+      let bordersX = [];
+      let bordersY = [];
+
+      let currentBox = null;
+      let currentRect = null;
+      let zIndex = 0;
+
+      function findClosest(array, goal) {
+        return array.reduce(function (prev, curr) {
+          return Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev;
+        });
+      }
+
+      function handleMouseMove(e) {
+        const { x, y } = currentRect;
+        const { clientX, clientY } = e;
+
+        currentBox.style.top = `${clientY - boxWidth / 2}px`;
+        currentBox.style.left = `${clientX - boxWidth / 2}px`;
+      }
+
+      function handleMouseDown(e) {
+        e.target.classList.add("shake");
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+
+        currentBox = e.target;
+        currentRect = e.target.getBoundingClientRect();
+        zIndex += 1;
+        currentBox.style.zIndex = zIndex;
+      }
+
+      function handleMouseUp(e) {
+        currentBox.classList.remove("shake");
+        currentBox.classList.add("transition");
+
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+
+        const { clientX, clientY } = e;
+        const { x, y } = currentRect;
+
+        const closestX = findClosest(bordersX, clientX - boxWidth / 2);
+        const closestY = findClosest(bordersY, clientY - boxWidth / 2);
+
+        Array.from(app.children).forEach((el) => {
+          const left = parseFloat(el.style.left.slice(0, -2));
+          const top = parseFloat(el.style.top.slice(0, -2));
+          if (findClosest(bordersX, left) === closestX && findClosest(bordersY, top) === closestY) {
+            el.classList.add("transition");
+            el.style.left = `${findClosest(bordersX, x)}px`;
+            el.style.top = `${findClosest(bordersY, y)}px`;
+          }
+        });
+
+        currentBox.style.left = `${closestX}px`;
+        currentBox.style.top = `${closestY}px`;
+
+        setTimeout(() => {
+          currentBox.classList.remove("transition");
+          document.querySelector(".transition").classList.remove("transition");
+        }, 500);
+      }
+
+      function generateBoxes() {
+        bordersX = [];
+        bordersY = [];
+        zIndex = 0;
+        const { innerWidth, innerHeight } = window;
+
+        const columns = Math.floor(innerWidth / (boxWidth + gap));
+        const rows = Math.floor(innerHeight / (boxWidth + gap));
+
+        while (app.lastElementChild) {
+          app.removeChild(app.lastElementChild);
+        }
+
+        for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+          for (let columnIndex = 0; columnIndex < columns; columnIndex++) {
+            const box = document.createElement("div");
+            box.classList.add("box");
+
+            const x = columnIndex * (boxWidth + gap) + (innerWidth - columns * (boxWidth + gap)) / 2;
+            const y = rowIndex * (boxWidth + gap) + (innerHeight - rows * (boxWidth + gap)) / 2;
+            box.style.left = `${x}px`;
+            box.style.top = `${y}px`;
+
+            if (!rowIndex) bordersX.push(x);
+            if (!columnIndex) bordersY.push(y);
+
+            app.appendChild(box);
+
+            box.addEventListener("mousedown", handleMouseDown);
+          }
+        }
+      }
+
+      window.addEventListener("resize", generateBoxes);
+
+      generateBoxes();
+    </script>
+  </body>
+</html>
